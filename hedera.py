@@ -56,6 +56,9 @@ parser.add_argument('--iperf', dest='iperf', default=False, action='store_true',
 parser.add_argument('--hedera',dest='hedera', default=False,
         action='store_true', help='Run the experiment with hedera GFF scheduler')
 
+parser.add_argument('--simulated_annealing',dest='simulated_annealing', default=False,
+        action='store_true', help='Run the experiment with hedera simulated annealing scheduler')
+
 parser.add_argument('--ashman_best', dest = 'ashman_best', default = False,
         action = 'store_true', help = 'Run the experiment with ashman Best Fit scheduler')
 
@@ -264,8 +267,11 @@ if __name__ == '__main__':
     elif args.ashman_prob:
         print "ProbTest with bandwidth=%s and ratio=%s" %(args.bandwidth, args.ratio)
         FatTreeTest(args, controller = 'ProbController')
+    elif args.ashman_prob:
+        print "HederaSimulatedAnnealing with bandwidth=%s and ratio=%s" %(args.bandwidth, args.ratio)
+        FatTreeTest(args, controller = 'SAController')
     else:
-        error('**error** please specify either ashman_prob, ashman_best, hedera, ecmp, or nonblocking\n')
+        error('**error** please specify either ashman_prob, ashman_best, hedera, simulated annealing, ecmp, or nonblocking\n')
         
     clean()
 

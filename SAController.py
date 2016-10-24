@@ -62,7 +62,7 @@ class Switch(EventMixin):
         self.connection.send(msg)
 
 
-class BFController(EventMixin):
+class SAController(EventMixin):
     def __init__(self, t, r, bw, ratio):
         self.switches = {}  # [dpid]->switch
         self.macTable = {}  # [mac]->(dpid, port)
@@ -264,90 +264,8 @@ class BFController(EventMixin):
         for flow in estFlows:
             demand = flow['demand']
             if demand >= self.ratio:
-                self._GlobalBestFit(flow)
+                self._GlobalFirstFit(flow)
 
 
-    def _GlobalBestFit(self,flow):
-        '''do the Ashman global best fit here'''
-        src_name = self.t.node_gen(dpid = flow['src']).name_str()
-        dst_name = self.t.node_gen(dpid = flow['dst']).name_str()
-        #print 'Global Best Fit for the elephant flow from ',src_name,'to', dst_name
-        paths = self.r.routes(src_name,dst_name)
-        #print 'all routes found for the big flow:\n',paths
-        GBF_route = None
-        deviation = 1.0;
-        for path in paths:
-            fitCheck = True
-            residualCapacity = 1.0;
-            for i in range(1,len(path)):
-                fitCheck = False
-                if self.bwReservation.has_key(path[i-1]) and self.bwReservation[path[i-1]].has_key(path[i]):
-                    if self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand'] > 1 :
-                        break
-                    else:
-                        #self.bwReservation[path[i-1]][path[i]]['reserveDemand'] += flow['demand']
-                        fitCheck = True
-                        if 1 - self.bwReservation[path[i-1]][path[i]]['reserveDemand'] - flow['demand'] < residualCapacity:
-                            residualCapacity = 1 - self.bwReservation[path[i-1]][path[i]]['reserveDemand'] - flow['demand']
-                else:
-                    if (not self.bwReservation.has_key(path[i-1])):
-                        self.bwReservation[path[i-1]]={}
-                    self.bwReservation[path[i-1]][path[i]]={'reserveDemand':0}
-                    fitCheck = True
-            if fitCheck == True:
-                if residualCapacity < deviation:
-                    GBF_route = path
-                    deviation = residualCapacity
-        if GBF_route != None:
-            for i in range(1,len(GBF_route)):
-                self.bwReservation[GBF_route[i-1]][GBF_route[i]]['reserveDemand'] += flow['demand']
-            #print "GBF route found:", GBF_route
-            """install new GBF_path between source and destintaion"""
-            self._install_customized_path(GBF_route,flow['match'])
-
-
-    def _install_customized_path(self,customized_route, match):
-        '''installing customized path here'''
-        flow_match = match
-        _route, match = self.matchDict[match.nw_src, match.nw_dst, match.tp_src, match.tp_dst]
-        if _route != customized_route[1:-1] and not self.statMonitorLock.locked():
-            #print "old route", _route
-            #print "match info:", match.nw_src, match.nw_dst, match.tp_src, match.tp_dst
-            self.statMonitorLock.acquire()
-            ''' Install entries on route between two switches. '''
-            route = customized_route[1:-1]
-            #print"customized route to be installed between switches:", route
-
-            for i, node in enumerate(route):
-                node_dpid = self.t.node_gen(name = node).dpid
-                if i < len(route) - 1:
-                    next_node = route[i + 1]
-                    out_port, next_in_port = self.t.port(node, next_node)
-                else:
-                    dpid_out, out_port = self.macTable[match.dl_dst]
-                    #print 'out_dpid', dpid_out,self.t.node_gen(name = GFF_route[-1]).dpid
-                    #print 'outPort', out_port
-                self.switches[node_dpid].install(out_port, match,idle_timeout = 10)
-
-            self.statMonitorLock.release()    
-            self.matchDict[flow_match.nw_src, flow_match.nw_dst, flow_match.tp_src, flow_match.tp_dst] = (route, match)
-        #print '_'*20
-
-
-def launch(topo = None, routing = None, bw = None, ratio = None ):
-    #print topo
-    if not topo:
-        raise Exception ("Please specify the topology")
-    else: 
-        t = buildTopo(topo)
-    r = getRouting(routing, t)
-    if bw == None:
-        bw = 10.0 #Mb/s
-        bw = float(bw/1000) #Gb/s
-    else:
-        bw = float(bw)/1000
-    if ratio == None:
-        ratio = 0.1
-    core.registerNew(BFController, t, r, bw, ratio)
-    log.info("** BFController is running")
- 
+    def _HederaSimulatedAnnealing(self,flow):
+        '''do the Hedera simulated annealing here'''
