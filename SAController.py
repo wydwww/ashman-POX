@@ -20,6 +20,7 @@ from pox.lib.packet.tcp import tcp
 from util import buildTopo, getRouting
 from DemandEstimation import demand_estimation
 from threading import Timer, Lock
+from random import choice
 
 log = core.getLogger()
 
@@ -266,6 +267,36 @@ class SAController(EventMixin):
             if demand >= self.ratio:
                 self._GlobalFirstFit(flow)
 
+    def energy(self):
+        """Calculate state's energy"""
+        pass
+
+    def swap(path_new):
+        while True:
+            n1 = choice(paths)
+            n2 = choice(paths)
+            if n1 != n2:
+                break
+        path_new[n1], path_new[n2] = path_new[n2], path_new[n1]
+        return path_new
+    
+    # Is the selected path fit and is it the best?
+    def fitCheck(path):
+        pass
 
     def _HederaSimulatedAnnealing(self,flow):
         '''do the Hedera simulated annealing here'''
+        src_name = self.t.node_gen(dpid = flow['src']).name_str()
+        dst_name = self.t.node_gen(dpid = flow['dst']).name_str()
+        paths = self.r.routes(src_name,dst_name)
+        T_min = 1
+        T_max = 10000
+        steps = 20000
+        T = T_max
+        path_new = paths[0]
+        
+        path_new = swap(path_new)
+        out_new = fitCheck(path_new)
+        # Lower the temperature
+        T = T - 1
+
