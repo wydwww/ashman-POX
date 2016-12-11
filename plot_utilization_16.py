@@ -113,6 +113,14 @@ def plot_results(args):
         bb['ashman_probfit'].append(vals)
         output_file.write('%s: %.3f\n' %(t, vals))
 
+    output_file.write('Hedera_Simulated_Annealing:\n')
+    for t in traffics:
+        print "Hedera_Simulated_Annealing:", t
+        input_file = args.files + '/hedera-simulated-annealing/%s/rate.txt' % t
+        vals = get_utilization(input_file, sw) / (48 * BW)
+        bb['Hedera_Simulated_Annealing'].append(vals)
+        output_file.write('%s: %.3f\n' %(t, vals))
+
     output_file.close()
 
 

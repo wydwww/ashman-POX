@@ -267,7 +267,7 @@ if __name__ == '__main__':
     elif args.ashman_prob:
         print "ProbTest with bandwidth=%s and ratio=%s" %(args.bandwidth, args.ratio)
         FatTreeTest(args, controller = 'ProbController')
-    elif args.ashman_prob:
+    elif args.simulated_annealing:
         print "HederaSimulatedAnnealing with bandwidth=%s and ratio=%s" %(args.bandwidth, args.ratio)
         FatTreeTest(args, controller = 'SAController')
     else:

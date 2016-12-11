@@ -69,7 +69,7 @@ def plot_results(args):
     num_t = 20
     n_t = num_t/num_plot
 
-    bb = {'nonblocking' : [],'hedera' :  [], 'ashman_bestfit' : [], 'ashman_probfit' : [], 'ecmp' : []}
+    bb = {'nonblocking' : [],'hedera' :  [], 'ashman_bestfit' : [], 'ashman_probfit' : [], 'ecmp' : [], 'Hedera_Simulated_Annealing' : []}
 
     sw = '4h1h1'
     output_file.write('Nonblocking:\n');
@@ -81,7 +81,7 @@ def plot_results(args):
         output_file.write('%s: %.3f\n' %(t, vals))
 
     sw = '[0-3]h[0-1]h1-eth[1-2]'
-    output_file.write('ECMP:\n');
+    output_file.write('ECMP:\n')
     for t in traffics:
         print "ECMP:", t
         input_file = args.files + '/fattree-ecmp/%s/rate.txt' % t
@@ -111,6 +111,14 @@ def plot_results(args):
         input_file = args.files + '/fattree-ashman-probfit/%s/rate.txt' % t
         vals = get_bisection_bw(input_file, sw)
         bb['ashman_probfit'].append(vals)
+        output_file.write('%s: %.3f\n' %(t, vals))
+
+    output_file.write('Hedera_Simulated_Annealing:\n')
+    for t in traffics:
+        print "Hedera_Simulated_Annealing:", t
+        input_file = args.files + '/hedera-simulated-annealing/%s/rate.txt' % t
+        vals = get_bisection_bw(input_file, sw)
+        bb['Hedera_Simulated_Annealing'].append(vals)
         output_file.write('%s: %.3f\n' %(t, vals))
 
     output_file.close()
@@ -148,7 +156,10 @@ def plot_results(args):
         # FatTree + ECMP
         p5 = plt.bar(ind + 1.5*width, bb['ecmp'][i*n_t:(i+1)*n_t], width=width, color='brown')
 
-        plt.legend([p1[0], p2[0], p3[0], p4[0], p5[0]],['Non-blocking', 'Ashman ProbFit', 'Ashman BestFit', 'Hedera', 'ECMP'],loc='upper left')
+        # FatTree + Hedera_Simulated_Annealing
+        p6 = plt.bar(ind + 0.5*width, bb['Hedera_Simulated_Annealing'][i*n_t:(i+1)*n_t], width=width, color='blue')
+
+        plt.legend([p1[0], p2[0], p3[0], p4[0], p5[0], p6[0]],['Non-blocking', 'Ashman ProbFit', 'Ashman BestFit', 'Hedera', 'ECMP', 'Hedera Simulated Annealing'],loc='upper left')
 
         plt.savefig(args.out)
 

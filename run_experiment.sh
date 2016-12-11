@@ -46,3 +46,9 @@ do
         sudo python hedera.py -i $input_file -d $out_dir -p 0.007 -b $BW -r $RATIO -t $DURATION --ashman_prob --iperf
 done
 
+for f in $INPUT_FILES;
+do
+        input_file=$INPUT_DIR/$f
+        pref="hedera-simulated-annealing"
+        out_dir="$OUTPUT_DIR/$pref/$f"
+        sudo python hedera.py -i $input_file -d $out_dir -p 0.007 -b $BW -r $RATIO -t $DURATION --simulated_annealing --iperf
