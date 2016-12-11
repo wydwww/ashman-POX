@@ -265,11 +265,7 @@ class SAController(EventMixin):
         for flow in estFlows:
             demand = flow['demand']
             if demand >= self.ratio:
-                self._GlobalFirstFit(flow)
-
-    def energy(self):
-        """Calculate state's energy"""
-        pass
+                self._HederaSimulatedAnnealing(flow)
 
     def swap(path_new):
         while True:
@@ -281,8 +277,24 @@ class SAController(EventMixin):
         return path_new
     
     # Is the selected path fit and is it the best?
-    def fitCheck(path):
-        pass
+    def accept(path):
+        for i in range(1,len(path)):
+                fitCheck = False 
+                if self.bwReservation.has_key(path[i-1]) and self.bwReservation[path[i-1]].has_key(path[i]):
+                    if self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand'] > 1 :
+                        break   
+                    else:
+                        #self.bwReservation[path[i-1]][path[i]]['reserveDemand'] += flow['demand']
+                        fitCheck = True  
+                else:
+                    self.bwReservation[path[i-1]]={}
+                    self.bwReservation[path[i-1]][path[i]]={'reserveDemand':0}
+                    fitCheck = True
+        if fitCheck == True:
+            energy_new = self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand']
+            return (energy_new < energy_current)
+            return ( cost_new < cost_current or
+             np.random.rand() < np.exp(-(energy_new - energy_new) / T) )
 
     def _HederaSimulatedAnnealing(self,flow):
         '''do the Hedera simulated annealing here'''
@@ -293,10 +305,71 @@ class SAController(EventMixin):
         T_max = 10000
         steps = 20000
         T = T_max
-        path_new = paths[0]
+        path_current = paths[0]
+        path_best = paths[0]
+        energy_current = 1
+        energy_best = 1
         
-        path_new = swap(path_new)
-        out_new = fitCheck(path_new)
-        # Lower the temperature
-        T = T - 1
+        while T > T_min:
+            path_new = swap(path_current)
+
+            if accept(path_new):
+                    # Update path_current
+                    path_current = path_new.copy()
+                    energy_current = energy_new
+
+                    if energy_new < energy_best:
+                        path_best = path_new.copy()
+                        energy_best = energy_new
+                else:
+                    path_new = path_current.copy()
+
+            # Lower the temperature
+            T = T - 1
+
+    def _install_customized_path(self,customized_route, match):
+        '''installing customized path here'''
+        flow_match = match
+        _route, match = self.matchDict[match.nw_src, match.nw_dst, match.tp_src, match.tp_dst]
+        if _route != customized_route[1:-1] and not self.statMonitorLock.locked():
+            #print "old route", _route
+            #print "match info:", match.nw_src, match.nw_dst, match.tp_src, match.tp_dst
+            self.statMonitorLock.acquire()
+            ''' Install entries on route between two switches. '''
+            route = customized_route[1:-1]
+            #print"customized route to be installed between switches:", route
+
+            for i, node in enumerate(route):
+                node_dpid = self.t.node_gen(name = node).dpid
+                if i < len(route) - 1:
+                    next_node = route[i + 1]
+                    out_port, next_in_port = self.t.port(node, next_node)
+                else:
+                    dpid_out, out_port = self.macTable[match.dl_dst]
+                    #print 'out_dpid', dpid_out,self.t.node_gen(name = GFF_route[-1]).dpid
+                    #print 'outPort', out_port
+                self.switches[node_dpid].install(out_port, match,idle_timeout = 10)
+
+            self.statMonitorLock.release()    
+            self.matchDict[flow_match.nw_src, flow_match.nw_dst, flow_match.tp_src, flow_match.tp_dst] = (route, match)
+        #print '_'*20
+
+
+def launch(topo = None, routing = None, bw = None, ratio = None ):
+    #print topo
+    if not topo:
+        raise Exception ("Please specify the topology")
+    else: 
+        t = buildTopo(topo)
+    r = getRouting(routing, t)
+    if bw == None:
+        bw = 10.0 #Mb/s
+        bw = float(bw/1000) #Gb/s
+    else:
+        bw = float(bw)/1000
+    if ratio == None:
+        ratio = 0.1
+    core.registerNew(HController, t, r, bw, ratio)
+    log.info("** SAontroller is running")
+ 
 
