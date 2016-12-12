@@ -270,31 +270,32 @@ class SAController(EventMixin):
     def swap(path_new):
         while True:
             n1 = choice(paths)
-            n2 = choice(paths)
-            if n1 != n2:
+            # n2 = choice(paths)
+            if n1 != path_new:
                 break
-        path_new[n1], path_new[n2] = path_new[n2], path_new[n1]
+        path_new = n1
         return path_new
-    
+
     # Is the selected path fit and is it the best?
     def accept(path):
-        for i in range(1,len(path)):
-                fitCheck = False 
-                if self.bwReservation.has_key(path[i-1]) and self.bwReservation[path[i-1]].has_key(path[i]):
-                    if self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand'] > 1 :
-                        break   
-                    else:
-                        #self.bwReservation[path[i-1]][path[i]]['reserveDemand'] += flow['demand']
-                        fitCheck = True  
+        for i in range(1, len(path)):
+            fitCheck = False
+            if self.bwReservation.has_key(path[i-1]) and self.bwReservation[path[i-1]].has_key(path[i]):
+                if self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand'] > 1 :
+                    break   
                 else:
-                    self.bwReservation[path[i-1]]={}
-                    self.bwReservation[path[i-1]][path[i]]={'reserveDemand':0}
-                    fitCheck = True
+                    #self.bwReservation[path[i-1]][path[i]]['reserveDemand'] += flow['demand']
+                    fitCheck = True  
+            else:
+                self.bwReservation[path[i-1]]={}
+                self.bwReservation[path[i-1]][path[i]]={'reserveDemand':0}
+                fitCheck = True
         if fitCheck == True:
             energy_new = self.bwReservation[path[i-1]][path[i]]['reserveDemand'] + flow['demand']
-            return (energy_new < energy_current)
-            return ( cost_new < cost_current or
-             np.random.rand() < np.exp(-(energy_new - energy_new) / T) )
+            return (energy_new < energy_current or
+             np.random.rand() < np.exp(-(energy_new - energy_current) / T) )
+        else:
+            return False
 
     def _HederaSimulatedAnnealing(self,flow):
         '''do the Hedera simulated annealing here'''
@@ -314,15 +315,15 @@ class SAController(EventMixin):
             path_new = swap(path_current)
 
             if accept(path_new):
-                    # Update path_current
-                    path_current = path_new.copy()
-                    energy_current = energy_new
+                # Update path_current
+                path_current = path_new.copy()
+                energy_current = energy_new
 
-                    if energy_new < energy_best:
-                        path_best = path_new.copy()
-                        energy_best = energy_new
-                else:
-                    path_new = path_current.copy()
+                if energy_new < energy_best:
+                    path_best = path_new.copy()
+                    energy_best = energy_new
+            else:
+                path_new = path_current.copy()
 
             # Lower the temperature
             T = T - 1
